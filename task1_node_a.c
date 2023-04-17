@@ -13,13 +13,13 @@
 #include <stdio.h> 
 #include "node-id.h"
 
-// Identification information of the node
+// Identification information of the node (I am 10677)
 
 
 // Configures the wake-up timer for neighbour discovery 
 #define WAKE_TIME RTIMER_SECOND/10    // 10 HZ, 0.1s
 
-#define SLEEP_CYCLE  9        	      // 0 for never sleep
+#define SLEEP_CYCLE  20               // 0 for never sleep
 #define SLEEP_SLOT RTIMER_SECOND/10   // sleep slot should not be too large to prevent overflow
 
 // For neighbour discovery, we would like to send message to everyone. We use Broadcast address:
@@ -31,8 +31,7 @@ typedef struct {
   unsigned long src_id;
   unsigned long timestamp;
   unsigned long seq;
-  unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
+  
 } data_packet_struct;
 
 /*---------------------------------------------------------------------------*/
@@ -53,11 +52,11 @@ unsigned long curr_timestamp;
 unsigned long last_received_timestamp;
 unsigned long reboot_time;
 
-// Dynamic sleep cycle
-unsigned int sleep_cycle = 40;
+// // Dynamic sleep cycle
+// unsigned int sleep_cycle = 50;
 
-// Cycles without receiving packet
-unsigned int cycles_since_last_received = 0;
+// // Cycles without receiving packet
+// unsigned int cycles_since_last_received = 0;
 
 // Starts the main contiki neighbour discovery process
 PROCESS(nbr_discovery_process, "cc2650 neighbour discovery process");
@@ -84,7 +83,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
 
     // last_received_timestamp = time_now;
 
-    cycles_since_last_received = 0;
+    // cycles_since_last_received = 0;
 
     // Print the details of the received packet
     printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot", 
@@ -149,30 +148,6 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       }
     }
 
-    // // sleep for a random number of slots
-    // if(SLEEP_CYCLE != 0){
-
-    //   // SLEEP_SLOT cannot be too large as value will overflow,
-    //   // to have a large sleep interval, sleep many times instead
-
-    //   // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
-    //   // the average is SLEEP_CYCLE 
-    //   unsigned long curr_sleep_cycle = sleep_cycle;
-    //   if (cycles_since_last_received != 0)
-    //   {
-    //     curr_sleep_cycle /= (cycles_since_last_received * 2);
-    //   }
-    //   NumSleep = random_rand() % (2 * curr_sleep_cycle + 1);  
-    //   // printf(" Sleep for %d slots \n",NumSleep);
-
-    //   // NumSleep should be a constant or static int
-    //   for(i = 0; i < NumSleep; i++){
-    //     rtimer_set(t, RTIMER_TIME(t) + SLEEP_SLOT, 1, (rtimer_callback_t)sender_scheduler, ptr);
-    //     PT_YIELD(&pt);
-    //   }
-
-    // }
-
     // radio off
     NETSTACK_RADIO.off();
 
@@ -181,14 +156,16 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
 
     // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
     // the average is SLEEP_CYCLE 
-    unsigned long curr_sleep_cycle = sleep_cycle;
-    if (cycles_since_last_received != 0)
-    {
-      curr_sleep_cycle /= (cycles_since_last_received * 2);
-    }
-    NumSleep = random_rand() % (curr_sleep_cycle + 1);  
-    cycles_since_last_received++;
+    // unsigned long curr_sleep_cycle = sleep_cycle;
+    // if (cycles_since_last_received != 0)
+    // {
+    //   curr_sleep_cycle /= (cycles_since_last_received * 2);
+    // }
+    // NumSleep = random_rand() % (curr_sleep_cycle + 1);
+    // cycles_since_last_received++;
     // printf(" Sleep for %d slots \n",NumSleep);
+
+    NumSleep = SLEEP_CYCLE;
 
     // NumSleep should be a constant or static int
     for(i = 0; i < NumSleep; i++){
