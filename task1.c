@@ -13,13 +13,13 @@
 #include <stdio.h> 
 #include "node-id.h"
 
-// Identification information of the node
+// Identification information of the node (I am 10677)
 
 
 // Configures the wake-up timer for neighbour discovery 
 #define WAKE_TIME RTIMER_SECOND/10    // 10 HZ, 0.1s
 
-#define SLEEP_CYCLE  9        	      // 0 for never sleep
+#define SLEEP_CYCLE  9                // 0 for never sleep
 #define SLEEP_SLOT RTIMER_SECOND/10   // sleep slot should not be too large to prevent overflow
 
 // For neighbour discovery, we would like to send message to everyone. We use Broadcast address:
@@ -31,7 +31,6 @@ typedef struct {
   unsigned long src_id;
   unsigned long timestamp;
   unsigned long seq;
-  unsigned long light_readings[10]; 
   
 } data_packet_struct;
 
@@ -54,7 +53,7 @@ unsigned long last_received_timestamp;
 unsigned long reboot_time;
 
 // Dynamic sleep cycle
-unsigned int sleep_cycle = 40;
+unsigned int sleep_cycle = 50;
 
 // Cycles without receiving packet
 unsigned int cycles_since_last_received = 0;
@@ -186,7 +185,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     {
       curr_sleep_cycle /= (cycles_since_last_received * 2);
     }
-    NumSleep = random_rand() % (curr_sleep_cycle + 1);  
+    NumSleep = random_rand() % (curr_sleep_cycle + 1);
     cycles_since_last_received++;
     // printf(" Sleep for %d slots \n",NumSleep);
 
