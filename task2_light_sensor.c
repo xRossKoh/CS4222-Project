@@ -33,7 +33,7 @@ typedef struct {
   unsigned long src_id;
   unsigned long timestamp;
   unsigned long seq;
-  unsigned long light_readings[];
+  unsigned long light_readings[10];
 
 } data_packet_struct;
 
@@ -54,14 +54,14 @@ static data_packet_struct data_packet;
 
 // Current time stamp of the node
 unsigned long curr_timestamp;
-unsigned long last_received_timestamp;
-unsigned long reboot_time;
+// unsigned long last_received_timestamp;
+// unsigned long reboot_time;
 
-// Dynamic sleep cycle
-unsigned int sleep_cycle = 40;
+// // Dynamic sleep cycle
+// unsigned int sleep_cycle = 40;
 
-// Cycles without receiving packet
-unsigned int cycles_since_last_received = 0;
+// // Cycles without receiving packet
+// unsigned int cycles_since_last_received = 0;
 
 // Variables for light sensor readings
 unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -93,7 +93,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
 
     // last_received_timestamp = time_now;
 
-    cycles_since_last_received = 0;
+    // cycles_since_last_received = 0;
 
     // Print the details of the received packet
     printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot", 
@@ -130,33 +130,55 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     NETSTACK_RADIO.on();
 
     // send NUM_SEND number of neighbour discovery beacon packets
-    for(i = 0; i < NUM_SEND; i++){
+    // for(i = 0; i < NUM_SEND; i++){
 
       
      
-       // Initialize the nullnet module with information of packet to be trasnmitted
-      nullnet_buf = (uint8_t *)&data_packet; //data transmitted
-      nullnet_len = sizeof(data_packet); //length of data transmitted
+    //   // Initialize the nullnet module with information of packet to be trasnmitted
+    //   nullnet_buf = (uint8_t *)&data_packet; //data transmitted
+    //   nullnet_len = sizeof(data_packet); //length of data transmitted
       
-      data_packet.seq++;
+    //   data_packet.seq++;
       
-      curr_timestamp = clock_time();
+    //   curr_timestamp = clock_time();
       
-      data_packet.timestamp = curr_timestamp - reboot_time;
+    //   data_packet.timestamp = curr_timestamp - reboot_time;
 
-      // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
+    //   for (int j = 0; j < 10; j++) {
+    //     data_packet.light_readings[j] = light_readings[start_pos - j];
+    //   }
 
-      NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
+    //   // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
+
+    //   NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
       
 
-      // wait for WAKE_TIME before sending the next packet
-      if(i != (NUM_SEND - 1)){
+    //   // wait for WAKE_TIME before sending the next packet
+    //   if(i != (NUM_SEND - 1)){
 
-        rtimer_set(t, RTIMER_TIME(t) + WAKE_TIME, 1, (rtimer_callback_t)sender_scheduler, ptr);
-        PT_YIELD(&pt);
+    //     rtimer_set(t, RTIMER_TIME(t) + WAKE_TIME, 1, (rtimer_callback_t)sender_scheduler, ptr);
+    //     PT_YIELD(&pt);
       
-      }
+    //   }
+    // }
+
+    // Initialize the nullnet module with information of packet to be trasnmitted
+    nullnet_buf = (uint8_t *)&data_packet; //data transmitted
+    nullnet_len = sizeof(data_packet); //length of data transmitted
+    
+    data_packet.seq++;
+    
+    curr_timestamp = clock_time();
+    
+    data_packet.timestamp = curr_timestamp;
+
+    for (int j = 0; j < 10; j++) {
+      data_packet.light_readings[j] = light_readings[start_pos - j];
     }
+
+    printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
+
+    NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
 
     // // sleep for a random number of slots
     // if(SLEEP_CYCLE != 0){
@@ -190,14 +212,17 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
 
     // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
     // the average is SLEEP_CYCLE 
-    unsigned long curr_sleep_cycle = sleep_cycle;
-    if (cycles_since_last_received != 0)
-    {
-      curr_sleep_cycle /= (cycles_since_last_received * 2);
-    }
-    NumSleep = random_rand() % (curr_sleep_cycle + 1);  
-    cycles_since_last_received++;
+    // unsigned long curr_sleep_cycle = sleep_cycle;
+    // if (cycles_since_last_received != 0)
+    // {
+    //   curr_sleep_cycle /= (cycles_since_last_received * 2);
+    // }
+    // NumSleep = random_rand() % (curr_sleep_cycle + 1);  
+    // cycles_since_last_received++;
     // printf(" Sleep for %d slots \n",NumSleep);
+
+    // Sleep for 0.1 seconds
+    NumSleep = SLEEP_CYCLE;
 
     // NumSleep should be a constant or static int
     for(i = 0; i < NumSleep; i++){
@@ -224,8 +249,8 @@ PROCESS_THREAD(nbr_discovery_process, ev, data)
   nullnet_set_input_callback(receive_packet_callback); //initialize receiver callback
   linkaddr_copy(&dest_addr, &linkaddr_null);
 
-  last_received_timestamp = clock_time();
-  reboot_time = clock_time();
+  // last_received_timestamp = clock_time();
+  // reboot_time = clock_time();
 
   printf("CC2650 neighbour discovery\n");
   printf("Node %d will be sending packet of size %d Bytes\n", node_id, (int)sizeof(data_packet_struct));
@@ -274,6 +299,7 @@ char light_sensor_scan(struct rtimer *t, void *ptr)
     for (i = 0; i < 10; i++) {
       printf("%ld, ", light_readings[i]);
     }
+    printf("\n");
     
     init_light_sensor();
 

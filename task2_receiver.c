@@ -84,16 +84,17 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
 
     // last_received_timestamp = time_now;
 
-    cycles_since_last_received = 0;
+    // cycles_since_last_received = 0;
 
     // Print the details of the received packet
-    printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot", 
+    printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot\n", 
       received_packet_data.seq, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI),
       received_packet_data.src_id,
       received_packet_data.timestamp);
-   
-    printf("\n");
 
+    for (int i = 0; i < 10; i++) {
+      printf("%ld, ", received_packet_data.light_readings[i]);
+    }
  
   }
 
