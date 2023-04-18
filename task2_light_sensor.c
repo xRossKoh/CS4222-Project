@@ -12,6 +12,8 @@
 #include <string.h>
 #include <stdio.h> 
 #include "node-id.h"
+#include "board-peripherals.h"
+#include <limits.h>
 
 // Identification information of the node
 
@@ -31,7 +33,7 @@ typedef struct {
   unsigned long src_id;
   unsigned long timestamp;
   unsigned long seq;
-  unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  unsigned long light_readings[];
 
 } data_packet_struct;
 
@@ -41,9 +43,11 @@ typedef struct {
 
 // sender timer implemented using rtimer
 static struct rtimer rt;
+static struct rtimer light_sensor_rt;
 
 // Protothread variable
 static struct pt pt;
+static struct pt light_sensor_pt;
 
 // Structure holding the data to be transmitted
 static data_packet_struct data_packet;
@@ -59,9 +63,14 @@ unsigned int sleep_cycle = 40;
 // Cycles without receiving packet
 unsigned int cycles_since_last_received = 0;
 
+// Variables for light sensor readings
+unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+unsigned long start_pos = 0;
+
 // Starts the main contiki neighbour discovery process
+PROCESS(light_sensor_process, "Light sensor reading process");
 PROCESS(nbr_discovery_process, "cc2650 neighbour discovery process");
-AUTOSTART_PROCESSES(&nbr_discovery_process);
+AUTOSTART_PROCESSES(&nbr_discovery_process, &light_sensor_process);
 
 // Function called after reception of a packet
 void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) 
@@ -200,7 +209,6 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
   PT_END(&pt);
 }
 
-
 // Main thread that handles the neighbour discovery process
 PROCESS_THREAD(nbr_discovery_process, ev, data)
 {
@@ -227,5 +235,65 @@ PROCESS_THREAD(nbr_discovery_process, ev, data)
 
   
 
+  PROCESS_END();
+}
+
+/*-------------------- LIGHT SENSOR FUNCTIONS --------------------*/
+
+static void init_light_sensor()
+{
+  SENSORS_ACTIVATE(opt_3001_sensor);
+}
+
+static void print_light_reading(int value)
+{
+  printf("OPT: Light=%d.%02d lux\n", value / 100, value % 100);
+}
+
+char light_sensor_scan(struct rtimer *t, void *ptr)
+{
+  static uint16_t i = 0;
+
+  int value;
+
+  // Begin the protothread
+  PT_BEGIN(&light_sensor_pt);
+
+  while (1)
+  {
+    value = opt_3001_sensor.value(0);
+    if (value == INT_MIN || value == CC26XX_SENSOR_READING_ERROR) {
+      printf("OPT: Light Sensor's Warming Up\n\n");
+    } else {
+      print_light_reading(value);
+      light_readings[start_pos] = value;
+      start_pos++;
+      start_pos %= 10;   
+    }
+
+    for (i = 0; i < 10; i++) {
+      printf("%ld, ", light_readings[i]);
+    }
+    
+    init_light_sensor();
+
+    for (i = 0; i < 30; i++){
+      rtimer_set(t, RTIMER_TIME(t) + RTIMER_SECOND, 1, (rtimer_callback_t)light_sensor_scan, ptr);
+      PT_YIELD(&light_sensor_pt);
+    }
+  }
+
+  PT_END(&light_sensor_pt);
+}
+
+PROCESS_THREAD(light_sensor_process, ev, data)
+{
+  PROCESS_BEGIN();
+
+  init_light_sensor();
+
+  // Start light sensor scan in 0.1s, allow time for light sensor to start up
+  rtimer_set(&light_sensor_rt, RTIMER_NOW() + (RTIMER_SECOND / 1000), 1, (rtimer_callback_t)light_sensor_scan, NULL);
+  
   PROCESS_END();
 }
