@@ -19,7 +19,7 @@
 // Configures the wake-up timer for neighbour discovery 
 #define WAKE_TIME RTIMER_SECOND/10    // 10 HZ, 0.1s
 
-#define SLEEP_CYCLE  9        	      // 0 for never sleep
+#define SLEEP_CYCLE  4       	        // 0 for never sleep
 #define SLEEP_SLOT RTIMER_SECOND/10   // sleep slot should not be too large to prevent overflow
 
 // For neighbour discovery, we would like to send message to everyone. We use Broadcast address:
@@ -50,14 +50,14 @@ static data_packet_struct data_packet;
 
 // Current time stamp of the node
 unsigned long curr_timestamp;
-unsigned long last_received_timestamp;
-unsigned long reboot_time;
+unsigned long prox_timestamp;
+unsigned long out_of_prox_timestamp;
 
-// Dynamic sleep cycle
-unsigned int sleep_cycle = 40;
+// Proximity flag
+bool in_prox = false;
 
-// Cycles without receiving packet
-unsigned int cycles_since_last_received = 0;
+// Global state
+bool is_detect_state = false;
 
 // Starts the main contiki neighbour discovery process
 PROCESS(nbr_discovery_process, "cc2650 neighbour discovery process");
@@ -66,7 +66,6 @@ AUTOSTART_PROCESSES(&nbr_discovery_process);
 // Function called after reception of a packet
 void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) 
 {
-
 
   // Check if the received packet size matches with what we expect it to be
 
@@ -78,23 +77,64 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     // Copy the content of packet into the data structure
     memcpy(&received_packet_data, data, len);
 
-    // unsigned long time_now = clock_time();
+    signed short rssi = (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI);
 
-    // printf("Time since last received packet = %ld\n", time_now - last_received_timestamp);
+    // check if node has been detected in proximity
+    if (!in_prox) {
 
-    // last_received_timestamp = time_now;
+      // node has come into proximity
+      if (rssi >= -70) {
 
-    // cycles_since_last_received = 0;
+        // set proximity flag
+        in_prox = true;
 
-    // Print the details of the received packet
-    printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot\n", 
-      received_packet_data.seq, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI),
-      received_packet_data.src_id,
-      received_packet_data.timestamp);
+        // start proximity counter
+        prox_timestamp = clock_time();
+      } 
+      // node is still not in proximity
+      // check if node has been out of proximity for 30s
+      else if (is_detect_state && clock_time() - out_of_prox_timestamp >= 3840) {
+        // change state to absent
+        is_detect_state = false;
+        printf("%ld ABSENT %ld", out_of_prox_timestamp, received_packet_data.src_id);
+      }
+    }
+    // node already detected in proximity 
+    else {
+
+      // node is now out of proximity
+      if (rssi < -70) {
+
+        // clear proximity flag
+        in_prox = false;
+
+        out_of_prox_timestamp = clock_time();
+      
+      // node is still in proximity
+      // check if node has been in proximity for 15s
+      } else if (!is_detect_state && clock_time() - prox_timestamp >= 1920) {
+        // change state to detect
+        is_detect_state = true;
+        printf("%ld DETECT %ld", prox_timestamp, received_packet_data.src_id);
+
+        // TODO send request for light sensor data
+      }
+    }
+    
+
+    // // Print the details of the received packet
+    // printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot\n", 
+    //   received_packet_data.seq, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI),
+    //   received_packet_data.src_id,
+    //   received_packet_data.timestamp);
+
+    printf("\n");
 
     for (int i = 0; i < 10; i++) {
       printf("%ld, ", received_packet_data.light_readings[i]);
     }
+
+    print("\n");
  
   }
 
@@ -112,9 +152,6 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
 
   // Get the current time stamp
   curr_timestamp = clock_time();
-
-  // printf("Start clock %lu ticks, timestamp %3lu.%03lu\n", curr_timestamp, curr_timestamp / CLOCK_SECOND, 
-  // ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
 
   while(1){
 
@@ -182,14 +219,16 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
 
     // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
     // the average is SLEEP_CYCLE 
-    unsigned long curr_sleep_cycle = sleep_cycle;
-    if (cycles_since_last_received != 0)
-    {
-      curr_sleep_cycle /= (cycles_since_last_received * 2);
-    }
-    NumSleep = random_rand() % (curr_sleep_cycle + 1);  
-    cycles_since_last_received++;
+    // unsigned long curr_sleep_cycle = sleep_cycle;
+    // if (cycles_since_last_received != 0)
+    // {
+    //   curr_sleep_cycle /= (cycles_since_last_received * 2);
+    // }
+    // NumSleep = random_rand() % (curr_sleep_cycle + 1);  
+    // cycles_since_last_received++;
     // printf(" Sleep for %d slots \n",NumSleep);
+
+    NumSleep = SLEEP_CYCLE;
 
     // NumSleep should be a constant or static int
     for(i = 0; i < NumSleep; i++){

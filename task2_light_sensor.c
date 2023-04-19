@@ -14,6 +14,7 @@
 #include "node-id.h"
 #include "board-peripherals.h"
 #include <limits.h>
+#include "sys/etimer.h"
 
 // Identification information of the node
 
@@ -21,7 +22,7 @@
 // Configures the wake-up timer for neighbour discovery 
 #define WAKE_TIME RTIMER_SECOND/10    // 10 HZ, 0.1s
 
-#define SLEEP_CYCLE  9        	      // 0 for never sleep
+#define SLEEP_CYCLE  1       	        // 0 for never sleep
 #define SLEEP_SLOT RTIMER_SECOND/10   // sleep slot should not be too large to prevent overflow
 
 // For neighbour discovery, we would like to send message to everyone. We use Broadcast address:
@@ -43,25 +44,17 @@ typedef struct {
 
 // sender timer implemented using rtimer
 static struct rtimer rt;
-static struct rtimer light_sensor_rt;
+// static struct rtimer light_sensor_rt;
 
 // Protothread variable
 static struct pt pt;
-static struct pt light_sensor_pt;
+// static struct pt light_sensor_pt;
 
 // Structure holding the data to be transmitted
 static data_packet_struct data_packet;
 
 // Current time stamp of the node
 unsigned long curr_timestamp;
-// unsigned long last_received_timestamp;
-// unsigned long reboot_time;
-
-// // Dynamic sleep cycle
-// unsigned int sleep_cycle = 40;
-
-// // Cycles without receiving packet
-// unsigned int cycles_since_last_received = 0;
 
 // Variables for light sensor readings
 unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -86,14 +79,6 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     
     // Copy the content of packet into the data structure
     memcpy(&received_packet_data, data, len);
-
-    // unsigned long time_now = clock_time();
-
-    // printf("Time since last received packet = %ld\n", time_now - last_received_timestamp);
-
-    // last_received_timestamp = time_now;
-
-    // cycles_since_last_received = 0;
 
     // Print the details of the received packet
     printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot", 
@@ -129,80 +114,57 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     // radio on
     NETSTACK_RADIO.on();
 
-    // send NUM_SEND number of neighbour discovery beacon packets
-    // for(i = 0; i < NUM_SEND; i++){
-
-      
+    send NUM_SEND number of neighbour discovery beacon packets
+    for(i = 0; i < NUM_SEND; i++){   
      
-    //   // Initialize the nullnet module with information of packet to be trasnmitted
-    //   nullnet_buf = (uint8_t *)&data_packet; //data transmitted
-    //   nullnet_len = sizeof(data_packet); //length of data transmitted
+      // Initialize the nullnet module with information of packet to be trasnmitted
+      nullnet_buf = (uint8_t *)&data_packet; //data transmitted
+      nullnet_len = sizeof(data_packet); //length of data transmitted
       
-    //   data_packet.seq++;
+      data_packet.seq++;
       
-    //   curr_timestamp = clock_time();
+      curr_timestamp = clock_time();
       
-    //   data_packet.timestamp = curr_timestamp - reboot_time;
+      data_packet.timestamp = curr_timestamp;
 
-    //   for (int j = 0; j < 10; j++) {
-    //     data_packet.light_readings[j] = light_readings[start_pos - j];
-    //   }
+      for (int j = 0; j < 10; j++) {
+        data_packet.light_readings[j] = light_readings[start_pos - j];
+      }
 
-    //   // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
+      printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
 
-    //   NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
+      NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
       
 
-    //   // wait for WAKE_TIME before sending the next packet
-    //   if(i != (NUM_SEND - 1)){
+      // wait for WAKE_TIME before sending the next packet
+      if(i != (NUM_SEND - 1)){
 
-    //     rtimer_set(t, RTIMER_TIME(t) + WAKE_TIME, 1, (rtimer_callback_t)sender_scheduler, ptr);
-    //     PT_YIELD(&pt);
+        rtimer_set(t, RTIMER_TIME(t) + WAKE_TIME, 1, (rtimer_callback_t)sender_scheduler, ptr);
+        PT_YIELD(&pt);
       
-    //   }
-    // }
-
-    // Initialize the nullnet module with information of packet to be trasnmitted
-    nullnet_buf = (uint8_t *)&data_packet; //data transmitted
-    nullnet_len = sizeof(data_packet); //length of data transmitted
-    
-    data_packet.seq++;
-    
-    curr_timestamp = clock_time();
-    
-    data_packet.timestamp = curr_timestamp;
-
-    for (int j = 0; j < 10; j++) {
-      data_packet.light_readings[j] = light_readings[start_pos - j];
+      }
     }
 
-    printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
+    // // Initialize the nullnet module with information of packet to be trasnmitted
+    // nullnet_buf = (uint8_t *)&data_packet; //data transmitted
+    // nullnet_len = sizeof(data_packet); //length of data transmitted
+    
+    // data_packet.seq++;
+    
+    // curr_timestamp = clock_time();
+    
+    // data_packet.timestamp = curr_timestamp;
 
-    NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
-
-    // // sleep for a random number of slots
-    // if(SLEEP_CYCLE != 0){
-
-    //   // SLEEP_SLOT cannot be too large as value will overflow,
-    //   // to have a large sleep interval, sleep many times instead
-
-    //   // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
-    //   // the average is SLEEP_CYCLE 
-    //   unsigned long curr_sleep_cycle = sleep_cycle;
-    //   if (cycles_since_last_received != 0)
-    //   {
-    //     curr_sleep_cycle /= (cycles_since_last_received * 2);
-    //   }
-    //   NumSleep = random_rand() % (2 * curr_sleep_cycle + 1);  
-    //   // printf(" Sleep for %d slots \n",NumSleep);
-
-    //   // NumSleep should be a constant or static int
-    //   for(i = 0; i < NumSleep; i++){
-    //     rtimer_set(t, RTIMER_TIME(t) + SLEEP_SLOT, 1, (rtimer_callback_t)sender_scheduler, ptr);
-    //     PT_YIELD(&pt);
-    //   }
-
+    // for (int j = 0; j < 10; j++) {
+    //   data_packet.light_readings[j] = light_readings[start_pos - j];
     // }
+
+    // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
+
+    // NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
+
+    // rtimer_set(t, RTIMER_TIME(t) + WAKE_TIME, 1, (rtimer_callback_t)sender_scheduler, ptr);
+    // PT_YIELD(&pt);
 
     // radio off
     NETSTACK_RADIO.off();
@@ -275,51 +237,43 @@ static void print_light_reading(int value)
   printf("OPT: Light=%d.%02d lux\n", value / 100, value % 100);
 }
 
-char light_sensor_scan(struct rtimer *t, void *ptr)
+void light_sensor_scan()
 {
   static uint16_t i = 0;
 
   int value;
 
-  // Begin the protothread
-  PT_BEGIN(&light_sensor_pt);
-
-  while (1)
-  {
-    value = opt_3001_sensor.value(0);
-    if (value == INT_MIN || value == CC26XX_SENSOR_READING_ERROR) {
-      printf("OPT: Light Sensor's Warming Up\n\n");
-    } else {
-      print_light_reading(value);
-      light_readings[start_pos] = value;
-      start_pos++;
-      start_pos %= 10;   
-    }
-
-    for (i = 0; i < 10; i++) {
-      printf("%ld, ", light_readings[i]);
-    }
-    printf("\n");
-    
-    init_light_sensor();
-
-    for (i = 0; i < 30; i++){
-      rtimer_set(t, RTIMER_TIME(t) + RTIMER_SECOND, 1, (rtimer_callback_t)light_sensor_scan, ptr);
-      PT_YIELD(&light_sensor_pt);
-    }
+  value = opt_3001_sensor.value(0);
+  if (value == INT_MIN || value == CC26XX_SENSOR_READING_ERROR) {
+    printf("OPT: Light Sensor's Warming Up\n\n");
+  } else {
+    print_light_reading(value);
+    light_readings[start_pos] = value;
+    start_pos++;
+    start_pos %= 10;   
   }
 
-  PT_END(&light_sensor_pt);
+  for (i = 0; i < 10; i++) {
+    printf("%ld, ", light_readings[i]);
+  }
+  printf("\n");
+  
+  init_light_sensor();
 }
 
 PROCESS_THREAD(light_sensor_process, ev, data)
 {
+  static struct etimer et;
+
   PROCESS_BEGIN();
 
   init_light_sensor();
 
-  // Start light sensor scan in 0.1s, allow time for light sensor to start up
-  rtimer_set(&light_sensor_rt, RTIMER_NOW() + (RTIMER_SECOND / 1000), 1, (rtimer_callback_t)light_sensor_scan, NULL);
-  
+  while (1) {
+    etimer_set(&et, CLOCK_SECOND * 30);
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
+    light_sensor_scan();
+  }
+
   PROCESS_END();
 }
