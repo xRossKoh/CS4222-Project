@@ -72,8 +72,8 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     memcpy(&received_packet_data, data, len);
     
     unsigned long curr_received_timestamp = clock_time();
-    printf("Time since last received packet: %lds\n", curr_received_timestamp - last_received_timestamp);
-    printf("Time since reboot: %lds\n", curr_received_timestamp - reboot_time);
+    printf("Time since last received packet: %ld ticks\n", curr_received_timestamp - last_received_timestamp);
+    printf("Time since reboot: %ld ticks\n", received_packet_data.timestamp);
 
     last_received_timestamp = curr_received_timestamp;
 
@@ -121,7 +121,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       
       curr_timestamp = clock_time();
       
-      data_packet.timestamp = curr_timestamp;
+      data_packet.timestamp = curr_timestamp - reboot_time;
 
       // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
 
