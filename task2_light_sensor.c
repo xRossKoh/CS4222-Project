@@ -114,7 +114,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     // radio on
     NETSTACK_RADIO.on();
 
-    send NUM_SEND number of neighbour discovery beacon packets
+    // send NUM_SEND number of neighbour discovery beacon packets
     for(i = 0; i < NUM_SEND; i++){   
      
       // Initialize the nullnet module with information of packet to be trasnmitted

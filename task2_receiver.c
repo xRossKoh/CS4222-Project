@@ -134,7 +134,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
       printf("%ld, ", received_packet_data.light_readings[i]);
     }
 
-    print("\n");
+    printf("\n");
  
   }
 
@@ -171,7 +171,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       
       curr_timestamp = clock_time();
       
-      data_packet.timestamp = curr_timestamp - reboot_time;
+      data_packet.timestamp = curr_timestamp;
 
       // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
 
@@ -255,9 +255,6 @@ PROCESS_THREAD(nbr_discovery_process, ev, data)
   
   nullnet_set_input_callback(receive_packet_callback); //initialize receiver callback
   linkaddr_copy(&dest_addr, &linkaddr_null);
-
-  last_received_timestamp = clock_time();
-  reboot_time = clock_time();
 
   printf("CC2650 neighbour discovery\n");
   printf("Node %d will be sending packet of size %d Bytes\n", node_id, (int)sizeof(data_packet_struct));
