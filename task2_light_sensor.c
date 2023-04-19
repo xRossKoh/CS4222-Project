@@ -81,10 +81,10 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     memcpy(&received_packet_data, data, len);
 
     // Print the details of the received packet
-    printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot", 
-      received_packet_data.seq, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI),
-      received_packet_data.src_id,
-      received_packet_data.timestamp);
+    // printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot", 
+    //   received_packet_data.seq, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI),
+    //   received_packet_data.src_id,
+    //   received_packet_data.timestamp);
    
     printf("\n");
 
@@ -131,7 +131,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
         data_packet.light_readings[j] = light_readings[start_pos - j];
       }
 
-      printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
+      // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
 
       NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
       
