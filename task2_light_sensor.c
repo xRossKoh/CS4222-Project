@@ -129,7 +129,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       data_packet.timestamp = curr_timestamp;
 
       for (int j = 0; j < 10; j++) {
-        data_packet.light_readings[j] = light_readings[start_pos - j];
+        data_packet.light_readings[j] = light_readings[(start_pos - j) % 10];
       }
 
       // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
