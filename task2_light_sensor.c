@@ -251,7 +251,7 @@ void light_sensor_scan()
     print_light_reading(value);
     light_readings[start_pos] = value;
     start_pos++;
-    start_pos %= 10;   
+    start_pos %= 10;
   }
 
   for (i = 0; i < 10; i++) {
