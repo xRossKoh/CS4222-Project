@@ -96,7 +96,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
       else if (is_detect_state && clock_time() - out_of_prox_timestamp >= 3840) {
         // change state to absent
         is_detect_state = false;
-        printf("%ld ABSENT %ld", out_of_prox_timestamp, received_packet_data.src_id);
+        printf("%ld ABSENT %ld\n", out_of_prox_timestamp, received_packet_data.src_id);
       }
     }
     // node already detected in proximity 
@@ -115,7 +115,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
       } else if (!is_detect_state && clock_time() - prox_timestamp >= 1920) {
         // change state to detect
         is_detect_state = true;
-        printf("%ld DETECT %ld", prox_timestamp, received_packet_data.src_id);
+        printf("%ld DETECT %ld\n", prox_timestamp, received_packet_data.src_id);
 
         // TODO send request for light sensor data
       }
@@ -128,13 +128,13 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     //   received_packet_data.src_id,
     //   received_packet_data.timestamp);
 
-    printf("\n");
+    // printf("\n");
 
     for (int i = 0; i < 10; i++) {
-      printf("%ld, ", received_packet_data.light_readings[i]);
+      // printf("%ld, ", received_packet_data.light_readings[i]);
     }
 
-    printf("\n");
+    // printf("\n");
  
   }
 
