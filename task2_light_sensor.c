@@ -52,6 +52,7 @@ static struct pt pt;
 
 // Structure holding the data to be transmitted
 static data_packet_struct data_packet;
+// data_packet->light_readings = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 // Current time stamp of the node
 unsigned long curr_timestamp;
