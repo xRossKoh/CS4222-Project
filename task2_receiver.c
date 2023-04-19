@@ -97,7 +97,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
         sender_id = received_packet_data.src_id;
         printf("%ld DETECT %ld\n", prox_timestamp, sender_id);
 
-        printf("Light: %ld", received_packet_data.light_readings[0]);
+        printf("Light: %ld\n", received_packet_data.light_readings[0]);
         for (int i = 1; i < 10; i++) {
           printf(", %ld", received_packet_data.light_readings[i]);
         }
