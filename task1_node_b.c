@@ -19,7 +19,7 @@
 // Configures the wake-up timer for neighbour discovery 
 #define WAKE_TIME RTIMER_SECOND/10    // 10 HZ, 0.1s
 
-#define SLEEP_CYCLE  4               // 0 for never sleep
+#define SLEEP_CYCLE  12               // 0 for never sleep
 #define SLEEP_SLOT RTIMER_SECOND/10   // sleep slot should not be too large to prevent overflow
 
 // For neighbour discovery, we would like to send message to everyone. We use Broadcast address:
@@ -86,7 +86,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     // cycles_since_last_received = 0;
 
     // Print the details of the received packet
-    printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot", 
+    printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot\n", 
       received_packet_data.seq, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI),
       received_packet_data.src_id,
       received_packet_data.timestamp);
