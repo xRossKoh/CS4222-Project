@@ -10,8 +10,7 @@
 #include "lib/random.h"
 #include "net/linkaddr.h"
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdio.h> 
 #include "node-id.h"
 #include "board-peripherals.h"
 #include <limits.h>
@@ -35,7 +34,7 @@ typedef struct {
   unsigned long src_id;
   unsigned long timestamp;
   unsigned long seq;
-  int light_readings[10];
+  unsigned long light_readings[10];
 
 } data_packet_struct;
 
@@ -53,12 +52,13 @@ static struct pt pt;
 
 // Structure holding the data to be transmitted
 static data_packet_struct data_packet;
+// data_packet->light_readings = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 // Current time stamp of the node
 unsigned long curr_timestamp;
 
 // Variables for light sensor readings
-int *light_readings;
+unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int start_pos = 0;
 
 // Starts the main contiki neighbour discovery process
@@ -69,23 +69,14 @@ AUTOSTART_PROCESSES(&nbr_discovery_process, &light_sensor_process);
 // Function called after reception of a packet
 void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) 
 {
-
-
   // Check if the received packet size matches with what we expect it to be
-
   if(len == sizeof(data_packet)) {
 
- 
     static data_packet_struct received_packet_data;
-    
     // Copy the content of packet into the data structure
     memcpy(&received_packet_data, data, len);
-   
     printf("\n");
-
- 
   }
-
 }
 
 // Scheduler function for the sender of neighbour discovery packets
@@ -119,12 +110,10 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       
       data_packet.timestamp = curr_timestamp;
 
-      int curr_start_pos = start_pos - 1;
+      // int curr_start_pos = start_pos - 1;
       for (int j = 0; j < 10; j++) {
-        data_packet.light_readings[j] = light_readings[(curr_start_pos - j) % 10];
-        printf("%d, ", data_packet.light_readings[j]);
+        data_packet.light_readings[9 - j] = light_readings[(j + start_pos) % 10];
       }
-      printf("\n");
 
       NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
       
@@ -211,10 +200,17 @@ void light_sensor_scan()
     start_pos %= 10;
   }
 
+  printf("Stored readings: ");
   for (i = 0; i < 10; i++) {
-    printf("%d, ", light_readings[i]);
+    printf("%ld, ", light_readings[i]);
   }
   printf("\n");
+
+  printf("Sent readings: ");
+  for (i = 0; i < 10; i++) {
+    printf("%ld, ", data_packet.light_readings[i]);
+  }
+    printf("\n");
   
   init_light_sensor();
 }
@@ -223,22 +219,15 @@ PROCESS_THREAD(light_sensor_process, ev, data)
 {
   static struct etimer et;
 
-  light_readings = malloc(10 * sizeof(int));
-  for (int i = 0; i < 10; i++) {
-    light_readings[i] = 0;
-  }
-
   PROCESS_BEGIN();
 
   init_light_sensor();
 
   while (1) {
-    etimer_set(&et, CLOCK_SECOND * 30);
+    etimer_set(&et, CLOCK_SECOND * 5);
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
     light_sensor_scan();
   }
-
-  free(light_readings);
 
   PROCESS_END();
 }
