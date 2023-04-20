@@ -50,12 +50,17 @@ static data_packet_struct data_packet;
 
 // Current time stamp of the node
 unsigned long curr_timestamp;
+
+// Time stamp of last packet received that was in proximity
 unsigned long prox_timestamp;
+
+// Time stamp of last packet received
 unsigned long last_received_timestamp;
 
 // Global state
 bool is_detect_state = false;
 
+// sender ID of transmitter
 unsigned long sender_id;
 
 // Starts the main contiki neighbour discovery process
@@ -97,7 +102,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
         sender_id = received_packet_data.src_id;
         printf("%ld DETECT %ld\n", prox_timestamp, sender_id);
 
-        printf("Light: %ld\n", received_packet_data.light_readings[0]);
+        printf("Light: %ld", received_packet_data.light_readings[0]);
         for (int i = 1; i < 10; i++) {
           printf(", %ld", received_packet_data.light_readings[i]);
         }
@@ -106,59 +111,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     }
     
     last_received_timestamp = clock_time();
-    
-    // // check if node has been detected in proximity
-    // if (!in_prox) {
-    //   // set proximity flag
-    //   in_prox = true;
 
-    //   // start proximity counter
-    //   prox_timestamp = clock_time();
-    // }
-    // else {
-    //   // 2s threshold value to ensure that sensors are consistently in proximity
-    //   if (clock_time() - last_received_timestamp >= 256) {
-    //     prox_timestamp = clock_time();
-    //   }
-    // }
-      // node is still not in proximity
-      // check if node has been out of proximity for 30s
-      // else if (is_detect_state && clock_time() - out_of_prox_timestamp >= 3840) {
-      //   // change state to absent
-      //   is_detect_state = false;
-      //   printf("%ld ABSENT %ld\n", out_of_prox_timestamp, received_packet_data.src_id);
-      // }
-    // }
-    // // node already detected in proximity 
-    // else {
-
-    //   // node is now out of proximity
-    //   if (rssi < -70) {
-
-    //     // clear proximity flag
-    //     in_prox = false;
-
-    //     out_of_prox_timestamp = clock_time();
-      
-    //   // node is still in proximity
-    //   // check if node has been in proximity for 15s
-    //   } else if (!is_detect_state && clock_time() - prox_timestamp >= 1920) {
-    //     // change state to detect
-    //     is_detect_state = true;
-    //     printf("%ld DETECT %ld\n", prox_timestamp, received_packet_data.src_id);
-
-    //     // TODO send request for light sensor data
-    //   }
-    // }
-
-
-    // // Print the details of the received packet
-    // printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot\n", 
-    //   received_packet_data.seq, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI),
-    //   received_packet_data.src_id,
-    //   received_packet_data.timestamp);
-
-    // printf("\n");
   }
 
 }
@@ -184,8 +137,6 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     // send NUM_SEND number of neighbour discovery beacon packets
     for(i = 0; i < NUM_SEND; i++){
 
-      
-     
        // Initialize the nullnet module with information of packet to be trasnmitted
       nullnet_buf = (uint8_t *)&data_packet; //data transmitted
       nullnet_len = sizeof(data_packet); //length of data transmitted
@@ -196,10 +147,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       
       data_packet.timestamp = curr_timestamp;
 
-      // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
-
       NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
-      
 
       // wait for WAKE_TIME before sending the next packet
       if(i != (NUM_SEND - 1)){
@@ -210,47 +158,10 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       }
     }
 
-    // // sleep for a random number of slots
-    // if(SLEEP_CYCLE != 0){
-
-    //   // SLEEP_SLOT cannot be too large as value will overflow,
-    //   // to have a large sleep interval, sleep many times instead
-
-    //   // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
-    //   // the average is SLEEP_CYCLE 
-    //   unsigned long curr_sleep_cycle = sleep_cycle;
-    //   if (cycles_since_last_received != 0)
-    //   {
-    //     curr_sleep_cycle /= (cycles_since_last_received * 2);
-    //   }
-    //   NumSleep = random_rand() % (2 * curr_sleep_cycle + 1);  
-    //   // printf(" Sleep for %d slots \n",NumSleep);
-
-    //   // NumSleep should be a constant or static int
-    //   for(i = 0; i < NumSleep; i++){
-    //     rtimer_set(t, RTIMER_TIME(t) + SLEEP_SLOT, 1, (rtimer_callback_t)sender_scheduler, ptr);
-    //     PT_YIELD(&pt);
-    //   }
-
-    // }
-
     // radio off
     NETSTACK_RADIO.off();
 
-    // SLEEP_SLOT cannot be too large as value will overflow,
-    // to have a large sleep interval, sleep many times instead
-
-    // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
-    // the average is SLEEP_CYCLE 
-    // unsigned long curr_sleep_cycle = sleep_cycle;
-    // if (cycles_since_last_received != 0)
-    // {
-    //   curr_sleep_cycle /= (cycles_since_last_received * 2);
-    // }
-    // NumSleep = random_rand() % (curr_sleep_cycle + 1);  
-    // cycles_since_last_received++;
-    // printf(" Sleep for %d slots \n",NumSleep);
-
+    // Sleep for 0.4s
     NumSleep = SLEEP_CYCLE;
 
     // NumSleep should be a constant or static int
@@ -297,47 +208,6 @@ void state_manager() {
     printf("%ld ABSENT %ld\n", last_received_timestamp, sender_id);
   }
 
-  // // check if node has been detected in proximity
-  // if (!in_prox) {
-
-  //   // node has come into proximity
-  //   if (rssi >= -70) {
-
-  //     // set proximity flag
-  //     in_prox = true;
-
-  //     // start proximity counter
-  //     prox_timestamp = clock_time();
-  //   } 
-  //   // node is still not in proximity
-  //   // check if node has been out of proximity for 30s
-  //   else if (is_detect_state && clock_time() - out_of_prox_timestamp >= 3840) {
-  //     // change state to absent
-  //     is_detect_state = false;
-  //     printf("%ld ABSENT %ld\n", out_of_prox_timestamp, received_packet_data.src_id);
-  //   }
-  // }
-  // // node already detected in proximity 
-  // else {
-
-  //   // node is now out of proximity
-  //   if (rssi < -70) {
-
-  //     // clear proximity flag
-  //     in_prox = false;
-
-  //     out_of_prox_timestamp = clock_time();
-    
-  //   // node is still in proximity
-  //   // check if node has been in proximity for 15s
-  //   } else if (!is_detect_state && clock_time() - prox_timestamp >= 1920) {
-  //     // change state to detect
-  //     is_detect_state = true;
-  //     printf("%ld DETECT %ld\n", prox_timestamp, received_packet_data.src_id);
-
-  //     // TODO send request for light sensor data
-  //   }
-  // }
 }
 
 PROCESS_THREAD(state_manager_process, ev, data) {

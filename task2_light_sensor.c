@@ -80,12 +80,6 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     
     // Copy the content of packet into the data structure
     memcpy(&received_packet_data, data, len);
-
-    // Print the details of the received packet
-    // printf("Received neighbour discovery packet %lu with rssi %d from %ld, %ld since reboot", 
-    //   received_packet_data.seq, (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI),
-    //   received_packet_data.src_id,
-    //   received_packet_data.timestamp);
    
     printf("\n");
 
@@ -106,9 +100,6 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
 
   // Get the current time stamp
   curr_timestamp = clock_time();
-
-  // printf("Start clock %lu ticks, timestamp %3lu.%03lu\n", curr_timestamp, curr_timestamp / CLOCK_SECOND, 
-  // ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
 
   while(1){
 
@@ -133,8 +124,6 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
         data_packet.light_readings[j] = light_readings[(curr_start_pos - j) % 10];
       }
 
-      // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
-
       NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
       
 
@@ -147,45 +136,10 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       }
     }
 
-    // // Initialize the nullnet module with information of packet to be trasnmitted
-    // nullnet_buf = (uint8_t *)&data_packet; //data transmitted
-    // nullnet_len = sizeof(data_packet); //length of data transmitted
-    
-    // data_packet.seq++;
-    
-    // curr_timestamp = clock_time();
-    
-    // data_packet.timestamp = curr_timestamp;
-
-    // for (int j = 0; j < 10; j++) {
-    //   data_packet.light_readings[j] = light_readings[start_pos - j];
-    // }
-
-    // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
-
-    // NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
-
-    // rtimer_set(t, RTIMER_TIME(t) + WAKE_TIME, 1, (rtimer_callback_t)sender_scheduler, ptr);
-    // PT_YIELD(&pt);
-
     // radio off
     NETSTACK_RADIO.off();
 
-    // SLEEP_SLOT cannot be too large as value will overflow,
-    // to have a large sleep interval, sleep many times instead
-
-    // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
-    // the average is SLEEP_CYCLE 
-    // unsigned long curr_sleep_cycle = sleep_cycle;
-    // if (cycles_since_last_received != 0)
-    // {
-    //   curr_sleep_cycle /= (cycles_since_last_received * 2);
-    // }
-    // NumSleep = random_rand() % (curr_sleep_cycle + 1);  
-    // cycles_since_last_received++;
-    // printf(" Sleep for %d slots \n",NumSleep);
-
-    // Sleep for 0.1 seconds
+    // Sleep for 0.1s
     NumSleep = SLEEP_CYCLE;
 
     // NumSleep should be a constant or static int
