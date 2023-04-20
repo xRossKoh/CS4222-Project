@@ -55,17 +55,17 @@ static data_packet_struct data_packet;
 // Current time stamp of the node
 unsigned long curr_timestamp;
 
-// Time stamp of last packet received that was in proximity
-unsigned long prox_timestamp;
+// // Time stamp of last packet received that was in proximity
+// unsigned long prox_timestamp;
 
-// Time stamp of last packet received
-unsigned long last_received_timestamp;
+// // Time stamp of last packet received
+// unsigned long last_received_timestamp;
 
-// Global state
-bool is_detect_state = false;
+// // Global state
+// bool is_detect_state = false;
 
-// sender ID of transmitter
-unsigned long sender_id;
+// // sender ID of transmitter
+// unsigned long sender_id;
 
 // Variables for light sensor readings
 unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -74,7 +74,7 @@ int start_pos = 0;
 // Starts the main contiki neighbour discovery process
 PROCESS(nbr_discovery_process, "cc2650 neighbour discovery process");
 PROCESS(light_sensor_process, "Light sensor reading process");
-PROCESS(state_manager_process, "State manager process")
+// PROCESS(state_manager_process, "State manager process");
 AUTOSTART_PROCESSES(&nbr_discovery_process, &light_sensor_process, &state_manager_process);
 
 // Function called after reception of a packet
@@ -87,35 +87,35 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     // Copy the content of packet into the data structure
     memcpy(&received_packet_data, data, len);
     
-    signed short rssi = (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI);
+    // signed short rssi = (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI);
 
-    if (rssi < -70) return;
+    // if (rssi < -70) return;
 
-    // assert: rssi >= -70 --> sender is in proximity
+    // // assert: rssi >= -70 --> sender is in proximity
 
-    // Check for current state of program
-    if (!is_detect_state) {
+    // // Check for current state of program
+    // if (!is_detect_state) {
 
-      // 2s threshold between successive packets for intermittent disconnect
-      if (clock_time() - last_received_timestamp >= 256) {
-        prox_timestamp = clock_time();
-      }
+    //   // 2s threshold between successive packets for intermittent disconnect
+    //   if (clock_time() - last_received_timestamp >= 256) {
+    //     prox_timestamp = clock_time();
+    //   }
 
-      // 15s threshold between successive packets for connectivity 
-      else if (clock_time() - prox_timestamp >= 1920) {
-        is_detect_state = true;
-        sender_id = received_packet_data.src_id;
-        printf("%ld DETECT %ld\n", prox_timestamp, sender_id);
+    //   // 15s threshold between successive packets for connectivity 
+    //   else if (clock_time() - prox_timestamp >= 1920) {
+    //     is_detect_state = true;
+    //     sender_id = received_packet_data.src_id;
+    //     printf("%ld DETECT %ld\n", prox_timestamp, sender_id);
 
-        printf("Light: %d", received_packet_data.light_readings[0]);
-        for (int i = 1; i < 10; i++) {
-          printf(", %d", received_packet_data.light_readings[i]);
-        }
-        printf("\n");
-      }
-    }
+    //     printf("Light: %d", received_packet_data.light_readings[0]);
+    //     for (int i = 1; i < 10; i++) {
+    //       printf(", %d", received_packet_data.light_readings[i]);
+    //     }
+    //     printf("\n");
+    //   }
+    // }
     
-    last_received_timestamp = clock_time();
+    // last_received_timestamp = clock_time();
   }
 }
 
@@ -275,27 +275,27 @@ PROCESS_THREAD(light_sensor_process, ev, data)
 
 /*-------------------- State manager functions --------------------*/
 
-void state_manager() {
+// void state_manager() {
 
-  if (is_detect_state && clock_time() - last_received_timestamp >= 3840) {
-    is_detect_state = false;
-    printf("%ld ABSENT %ld\n", last_received_timestamp, sender_id);
-  }
+//   if (is_detect_state && clock_time() - last_received_timestamp >= 3840) {
+//     is_detect_state = false;
+//     printf("%ld ABSENT %ld\n", last_received_timestamp, sender_id);
+//   }
 
-}
+// }
 
-PROCESS_THREAD(state_manager_process, ev, data) {
+// PROCESS_THREAD(state_manager_process, ev, data) {
   
-  static struct etimer et;
+//   static struct etimer et;
   
-  PROCESS_BEGIN();
+//   PROCESS_BEGIN();
 
-  while (1) {
-    etimer_set(&et, CLOCK_SECOND / 10);
-    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
-    state_manager();
-  }
+//   while (1) {
+//     etimer_set(&et, CLOCK_SECOND / 10);
+//     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
+//     state_manager();
+//   }
 
-  PROCESS_END();
-}
+//   PROCESS_END();
+// }
 
