@@ -49,14 +49,6 @@ static data_packet_struct data_packet;
 
 // Current time stamp of the node
 unsigned long curr_timestamp;
-unsigned long last_received_timestamp;
-unsigned long reboot_time;
-
-// // Dynamic sleep cycle
-// unsigned int sleep_cycle = 50;
-
-// // Cycles without receiving packet
-// unsigned int cycles_since_last_received = 0;
 
 // Starts the main contiki neighbour discovery process
 PROCESS(nbr_discovery_process, "cc2650 neighbour discovery process");
@@ -76,14 +68,6 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     
     // Copy the content of packet into the data structure
     memcpy(&received_packet_data, data, len);
-
-    // unsigned long time_now = clock_time();
-
-    // printf("Time since last received packet = %ld\n", time_now - last_received_timestamp);
-
-    // last_received_timestamp = time_now;
-
-    // cycles_since_last_received = 0;
 
     // Print the details of the received packet
     printf("Received packet %lu with rssi %d from %ld with timestamp %ld, own timestamp %ld\n", 
@@ -112,9 +96,6 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
   // Get the current time stamp
   curr_timestamp = clock_time();
 
-  // printf("Start clock %lu ticks, timestamp %3lu.%03lu\n", curr_timestamp, curr_timestamp / CLOCK_SECOND, 
-  // ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
-
   while(1){
 
     // radio on
@@ -123,8 +104,6 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     // send NUM_SEND number of neighbour discovery beacon packets
     for(i = 0; i < NUM_SEND; i++){
 
-      
-     
        // Initialize the nullnet module with information of packet to be trasnmitted
       nullnet_buf = (uint8_t *)&data_packet; //data transmitted
       nullnet_len = sizeof(data_packet); //length of data transmitted
@@ -133,12 +112,9 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       
       curr_timestamp = clock_time();
       
-      data_packet.timestamp = curr_timestamp - reboot_time;
-
-      // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
+      data_packet.timestamp = curr_timestamp;
 
       NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
-      
 
       // wait for WAKE_TIME before sending the next packet
       if(i != (NUM_SEND - 1)){
@@ -152,19 +128,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     // radio off
     NETSTACK_RADIO.off();
 
-    // SLEEP_SLOT cannot be too large as value will overflow,
-    // to have a large sleep interval, sleep many times instead
-
-    // get a value that is uniformly distributed between 0 and 2*SLEEP_CYCLE
-    // the average is SLEEP_CYCLE 
-    // unsigned long curr_sleep_cycle = sleep_cycle;
-    // if (cycles_since_last_received != 0)
-    // {
-    //   curr_sleep_cycle /= (cycles_since_last_received * 2);
-    // }
-    // NumSleep = random_rand() % (curr_sleep_cycle + 1);
-    // cycles_since_last_received++;
-    // printf(" Sleep for %d slots \n",NumSleep);
+    // Sleep for 1.2s
     NumSleep = SLEEP_CYCLE;
 
     // NumSleep should be a constant or static int
@@ -192,9 +156,6 @@ PROCESS_THREAD(nbr_discovery_process, ev, data)
   
   nullnet_set_input_callback(receive_packet_callback); //initialize receiver callback
   linkaddr_copy(&dest_addr, &linkaddr_null);
-
-  last_received_timestamp = clock_time();
-  reboot_time = clock_time();
 
   printf("CC2650 neighbour discovery\n");
   printf("Node %d will be sending packet of size %d Bytes\n", node_id, (int)sizeof(data_packet_struct));
