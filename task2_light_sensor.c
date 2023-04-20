@@ -59,7 +59,7 @@ unsigned long curr_timestamp;
 
 // Variables for light sensor readings
 unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-unsigned long start_pos = 0;
+int start_pos = 0;
 
 // Starts the main contiki neighbour discovery process
 PROCESS(light_sensor_process, "Light sensor reading process");
@@ -128,8 +128,9 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       
       data_packet.timestamp = curr_timestamp;
 
+      int curr_start_pos = start_pos;
       for (int j = 0; j < 10; j++) {
-        data_packet.light_readings[j] = light_readings[(start_pos - j) % 10];
+        data_packet.light_readings[j] = light_readings[(curr_start_pos - j) % 10];
       }
 
       // printf("Send seq# %lu  @ %8lu ticks   %3lu.%03lu\n", data_packet.seq, curr_timestamp, curr_timestamp / CLOCK_SECOND, ((curr_timestamp % CLOCK_SECOND)*1000) / CLOCK_SECOND);
