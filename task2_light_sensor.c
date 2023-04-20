@@ -119,7 +119,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       
       data_packet.timestamp = curr_timestamp;
 
-      int curr_start_pos = start_pos;
+      int curr_start_pos = start_pos - 1;
       for (int j = 0; j < 10; j++) {
         data_packet.light_readings[j] = light_readings[(curr_start_pos - j) % 10];
       }
