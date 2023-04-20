@@ -32,7 +32,8 @@ typedef struct {
   unsigned long timestamp;
   unsigned long seq;
   int light_readings[10]; 
-  
+  bool is_sender;
+
 } data_packet_struct;
 
 /*---------------------------------------------------------------------------*/
@@ -81,6 +82,8 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     
     // Copy the content of packet into the data structure
     memcpy(&received_packet_data, data, len);
+
+    if (!received_packet_data.is_sender) return;
 
     signed short rssi = (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI);
 
@@ -137,17 +140,17 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
     // send NUM_SEND number of neighbour discovery beacon packets
     for(i = 0; i < NUM_SEND; i++){
 
-      //  // Initialize the nullnet module with information of packet to be trasnmitted
-      // nullnet_buf = (uint8_t *)&data_packet; //data transmitted
-      // nullnet_len = sizeof(data_packet); //length of data transmitted
+       // Initialize the nullnet module with information of packet to be trasnmitted
+      nullnet_buf = (uint8_t *)&data_packet; //data transmitted
+      nullnet_len = sizeof(data_packet); //length of data transmitted
       
-      // data_packet.seq++;
+      data_packet.seq++;
       
-      // curr_timestamp = clock_time();
+      curr_timestamp = clock_time();
       
-      // data_packet.timestamp = curr_timestamp;
+      data_packet.timestamp = curr_timestamp;
 
-      // NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
+      NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
 
       // wait for WAKE_TIME before sending the next packet
       if(i != (NUM_SEND - 1)){
@@ -186,6 +189,7 @@ PROCESS_THREAD(nbr_discovery_process, ev, data)
     // initialize data packet sent for neighbour discovery exchange
   data_packet.src_id = node_id; //Initialize the node ID
   data_packet.seq = 0; //Initialize the sequence number of the packet
+  data_packet.is_sender = false;
   
   nullnet_set_input_callback(receive_packet_callback); //initialize receiver callback
   linkaddr_copy(&dest_addr, &linkaddr_null);

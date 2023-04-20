@@ -30,12 +30,24 @@ linkaddr_t dest_addr;
 #define NUM_SEND 2
 /*---------------------------------------------------------------------------*/
 typedef struct {
+
   unsigned long src_id;
   unsigned long timestamp;
   unsigned long seq;
   unsigned long light_readings[10];
+  bool is_sender;
 
 } data_packet_struct;
+
+typedef struct {
+
+  unsigned long node_id;
+  unsigned long prox_timestamp;
+  unsigned long last_received_timestamp;
+  bool is_detect_state;
+  bool is_valid_node;
+
+} neighbour_struct;
 
 /*---------------------------------------------------------------------------*/
 // duty cycle = WAKE_TIME / (WAKE_TIME + SLEEP_SLOT * SLEEP_CYCLE)
@@ -67,14 +79,17 @@ unsigned long curr_timestamp;
 // // sender ID of transmitter
 // unsigned long sender_id;
 
+// Array of neighbours
+static neighbour_struct neighbours[3];
+
 // Variables for light sensor readings
-unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-int start_pos = 0;
+static unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int start_pos = 0;
 
 // Starts the main contiki neighbour discovery process
 PROCESS(nbr_discovery_process, "cc2650 neighbour discovery process");
 PROCESS(light_sensor_process, "Light sensor reading process");
-// PROCESS(state_manager_process, "State manager process");
+PROCESS(state_manager_process, "State manager process");
 AUTOSTART_PROCESSES(&nbr_discovery_process, &light_sensor_process, &state_manager_process);
 
 // Function called after reception of a packet
@@ -86,36 +101,62 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     static data_packet_struct received_packet_data;
     // Copy the content of packet into the data structure
     memcpy(&received_packet_data, data, len);
+
+    unsigned long src_id = received_packet_data.src_id;
+
+    // Check if src id of received packet has been validated
+    // Else validate src id as new node
+    int src_index = -1;
+    for (int i = 0; i < 3; i++) {
+      // Validate new src id
+      if (!neighbours[i].is_valid_node) {
+        neighbours[i].node_id = src_id;
+        neighbours[i].is_valid_node = true;
+        src_index = i;
+        break;
+      }
+      
+      // src id already validated
+      if (neighbours[i].node_id == src_id) {
+        src_index = i;
+        break;
+      }
+    }
+
+    // All 3 receiver slots are registered, return from function
+    if (src_index == -1) {
+      printf("More than 3 receivers detected. Please try again later.\n");
+      return;
+    }
     
-    // signed short rssi = (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI);
+    signed short rssi = (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI);
 
-    // if (rssi < -70) return;
+    if (rssi < -70) return;
 
-    // // assert: rssi >= -70 --> sender is in proximity
+    // assert: rssi >= -70 --> sender is in proximity
 
-    // // Check for current state of program
-    // if (!is_detect_state) {
+    // Check for current state of program
+    if (!neighbours[src_index].is_detect_state) {
 
-    //   // 2s threshold between successive packets for intermittent disconnect
-    //   if (clock_time() - last_received_timestamp >= 256) {
-    //     prox_timestamp = clock_time();
-    //   }
+      // 2s threshold between successive packets for intermittent disconnect
+      if (clock_time() - neighbours[src_index].last_received_timestamp >= 256) {
+        neighbours[src_index].prox_timestamp = clock_time();
+      }
 
-    //   // 15s threshold between successive packets for connectivity 
-    //   else if (clock_time() - prox_timestamp >= 1920) {
-    //     is_detect_state = true;
-    //     sender_id = received_packet_data.src_id;
-    //     printf("%ld DETECT %ld\n", prox_timestamp, sender_id);
+      // 15s threshold between successive packets for connectivity 
+      else if (clock_time() - neighbours[src_index].prox_timestamp >= 1920) {
+        neighbours[src_index].is_detect_state = true;
+        printf("%ld DETECT %ld\n", neighbours[src_index].prox_timestamp, src_id);
 
-    //     printf("Light: %d", received_packet_data.light_readings[0]);
-    //     for (int i = 1; i < 10; i++) {
-    //       printf(", %d", received_packet_data.light_readings[i]);
-    //     }
-    //     printf("\n");
-    //   }
-    // }
+        printf("Light: %d", received_packet_data.light_readings[0]);
+        for (int i = 1; i < 10; i++) {
+          printf(", %d", received_packet_data.light_readings[i]);
+        }
+        printf("\n");
+      }
+    }
     
-    // last_received_timestamp = clock_time();
+    neighbours[src_index].last_received_timestamp = clock_time();
   }
 }
 
@@ -195,6 +236,12 @@ PROCESS_THREAD(nbr_discovery_process, ev, data)
     // initialize data packet sent for neighbour discovery exchange
   data_packet.src_id = node_id; //Initialize the node ID
   data_packet.seq = 0; //Initialize the sequence number of the packet
+  data_packet.is_sender = true;
+
+  // initialise all receivers slots to invalid
+  for (int i = 0; i < 3; i++) {
+    neighbours[i].is_valid_node = false;
+  }
   
   nullnet_set_input_callback(receive_packet_callback); //initialize receiver callback
   linkaddr_copy(&dest_addr, &linkaddr_null);
@@ -275,27 +322,30 @@ PROCESS_THREAD(light_sensor_process, ev, data)
 
 /*-------------------- State manager functions --------------------*/
 
-// void state_manager() {
+void state_manager() {
 
-//   if (is_detect_state && clock_time() - last_received_timestamp >= 3840) {
-//     is_detect_state = false;
-//     printf("%ld ABSENT %ld\n", last_received_timestamp, sender_id);
-//   }
+  for (int i = 0; i < 3; i++) {
+    if (neighbours[i].is_detect_state && clock_time() - neighbours[i].last_received_timestamp >= 3840) {
+      neighbours[i].is_detect_state = false;
+      neighbours[i].is_valid_node = false;
+      printf("%ld ABSENT %ld\n", neighbours[i].last_received_timestamp, neighbours[i].node_id);
+    }
+  }
 
-// }
+}
 
-// PROCESS_THREAD(state_manager_process, ev, data) {
+PROCESS_THREAD(state_manager_process, ev, data) {
   
-//   static struct etimer et;
+  static struct etimer et;
   
-//   PROCESS_BEGIN();
+  PROCESS_BEGIN();
 
-//   while (1) {
-//     etimer_set(&et, CLOCK_SECOND / 10);
-//     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
-//     state_manager();
-//   }
+  while (1) {
+    etimer_set(&et, CLOCK_SECOND / 10);
+    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
+    state_manager();
+  }
 
-//   PROCESS_END();
-// }
+  PROCESS_END();
+}
 
