@@ -10,7 +10,8 @@
 #include "lib/random.h"
 #include "net/linkaddr.h"
 #include <string.h>
-#include <stdio.h> 
+#include <stdio.h>
+#include <stdlib.h>
 #include "node-id.h"
 #include "board-peripherals.h"
 #include <limits.h>
@@ -58,7 +59,7 @@ static data_packet_struct data_packet;
 unsigned long curr_timestamp;
 
 // Variables for light sensor readings
-unsigned long light_readings[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+unsigned long *light_readings;
 int start_pos = 0;
 
 // Starts the main contiki neighbour discovery process
@@ -122,7 +123,9 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       int curr_start_pos = start_pos - 1;
       for (int j = 0; j < 10; j++) {
         data_packet.light_readings[j] = light_readings[(curr_start_pos - j) % 10];
+        printf("%ld, ", data_packet.light_readings[j]);
       }
+      printf("\n");
 
       NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
       
@@ -221,6 +224,11 @@ PROCESS_THREAD(light_sensor_process, ev, data)
 {
   static struct etimer et;
 
+  light_readings = malloc(10 * sizeof(unsigned long));
+  for (int i = 0; i < 10; i++) {
+    light_readings[i] = 0;
+  }
+
   PROCESS_BEGIN();
 
   init_light_sensor();
@@ -230,6 +238,8 @@ PROCESS_THREAD(light_sensor_process, ev, data)
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
     light_sensor_scan();
   }
+
+  free(light_readings);
 
   PROCESS_END();
 }
