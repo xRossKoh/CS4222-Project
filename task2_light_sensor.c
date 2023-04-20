@@ -69,23 +69,14 @@ AUTOSTART_PROCESSES(&nbr_discovery_process, &light_sensor_process);
 // Function called after reception of a packet
 void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest) 
 {
-
-
   // Check if the received packet size matches with what we expect it to be
-
   if(len == sizeof(data_packet)) {
 
- 
     static data_packet_struct received_packet_data;
-    
     // Copy the content of packet into the data structure
     memcpy(&received_packet_data, data, len);
-   
     printf("\n");
-
- 
   }
-
 }
 
 // Scheduler function for the sender of neighbour discovery packets
@@ -120,9 +111,9 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       data_packet.timestamp = curr_timestamp;
 
       // int curr_start_pos = start_pos - 1;
-      // for (int j = 0; j < 10; j++) {
-      //   data_packet.light_readings[j] = light_readings[(curr_start_pos - j) % 10];
-      // }
+      for (int j = 0; j < 10; j++) {
+        data_packet.light_readings[9 - j] = light_readings[(j + start_pos) % 10];
+      }
 
       NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
       
@@ -204,9 +195,9 @@ void light_sensor_scan()
     printf("OPT: Light Sensor's Warming Up\n\n");
   } else {
     print_light_reading(value);
-    // light_readings[start_pos] = value;
-    // start_pos++;
-    // start_pos %= 10;
+    light_readings[start_pos] = value;
+    start_pos++;
+    start_pos %= 10;
   }
 
   printf("Stored readings: ");
@@ -233,7 +224,7 @@ PROCESS_THREAD(light_sensor_process, ev, data)
   init_light_sensor();
 
   while (1) {
-    etimer_set(&et, CLOCK_SECOND * 30);
+    etimer_set(&et, CLOCK_SECOND * 5);
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
     light_sensor_scan();
   }
