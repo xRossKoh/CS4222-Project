@@ -119,10 +119,10 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       
       data_packet.timestamp = curr_timestamp;
 
-      int curr_start_pos = start_pos - 1;
-      for (int j = 0; j < 10; j++) {
-        data_packet.light_readings[j] = light_readings[(curr_start_pos - j) % 10];
-      }
+      // int curr_start_pos = start_pos - 1;
+      // for (int j = 0; j < 10; j++) {
+      //   data_packet.light_readings[j] = light_readings[(curr_start_pos - j) % 10];
+      // }
 
       NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
       
@@ -204,15 +204,22 @@ void light_sensor_scan()
     printf("OPT: Light Sensor's Warming Up\n\n");
   } else {
     print_light_reading(value);
-    light_readings[start_pos] = value;
-    start_pos++;
-    start_pos %= 10;
+    // light_readings[start_pos] = value;
+    // start_pos++;
+    // start_pos %= 10;
   }
 
+  printf("Stored readings: ");
   for (i = 0; i < 10; i++) {
     printf("%ld, ", light_readings[i]);
   }
   printf("\n");
+
+  printf("Sent readings: ");
+  for (i = 0; i < 10; i++) {
+    printf("%ld, ", data_packet.light_readings[i]);
+  }
+    printf("\n");
   
   init_light_sensor();
 }
