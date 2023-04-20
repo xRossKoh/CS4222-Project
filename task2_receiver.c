@@ -201,6 +201,8 @@ PROCESS_THREAD(nbr_discovery_process, ev, data)
   PROCESS_END();
 }
 
+/*-------------------- State manager functions --------------------*/
+
 void state_manager() {
 
   if (is_detect_state && clock_time() - last_received_timestamp >= 3840) {
