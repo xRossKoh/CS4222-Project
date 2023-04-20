@@ -35,7 +35,7 @@ typedef struct {
   unsigned long src_id;
   unsigned long timestamp;
   unsigned long seq;
-  unsigned long light_readings[10];
+  int light_readings[10];
 
 } data_packet_struct;
 
@@ -53,13 +53,12 @@ static struct pt pt;
 
 // Structure holding the data to be transmitted
 static data_packet_struct data_packet;
-// data_packet->light_readings = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 // Current time stamp of the node
 unsigned long curr_timestamp;
 
 // Variables for light sensor readings
-unsigned long *light_readings;
+int *light_readings;
 int start_pos = 0;
 
 // Starts the main contiki neighbour discovery process
@@ -123,7 +122,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       int curr_start_pos = start_pos - 1;
       for (int j = 0; j < 10; j++) {
         data_packet.light_readings[j] = light_readings[(curr_start_pos - j) % 10];
-        printf("%ld, ", data_packet.light_readings[j]);
+        printf("%d, ", data_packet.light_readings[j]);
       }
       printf("\n");
 
@@ -213,7 +212,7 @@ void light_sensor_scan()
   }
 
   for (i = 0; i < 10; i++) {
-    printf("%ld, ", light_readings[i]);
+    printf("%d, ", light_readings[i]);
   }
   printf("\n");
   
@@ -224,7 +223,7 @@ PROCESS_THREAD(light_sensor_process, ev, data)
 {
   static struct etimer et;
 
-  light_readings = malloc(10 * sizeof(unsigned long));
+  light_readings = malloc(10 * sizeof(int));
   for (int i = 0; i < 10; i++) {
     light_readings[i] = 0;
   }

@@ -31,7 +31,7 @@ typedef struct {
   unsigned long src_id;
   unsigned long timestamp;
   unsigned long seq;
-  unsigned long light_readings[10]; 
+  int light_readings[10]; 
   
 } data_packet_struct;
 
@@ -102,9 +102,9 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
         sender_id = received_packet_data.src_id;
         printf("%ld DETECT %ld\n", prox_timestamp, sender_id);
 
-        printf("Light: %ld", received_packet_data.light_readings[0]);
+        printf("Light: %d", received_packet_data.light_readings[0]);
         for (int i = 1; i < 10; i++) {
-          printf(", %ld", received_packet_data.light_readings[i]);
+          printf(", %d", received_packet_data.light_readings[i]);
         }
         printf("\n");
       }
