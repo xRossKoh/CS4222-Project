@@ -148,9 +148,9 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
         neighbours[src_index].is_detect_state = true;
         printf("%ld DETECT %ld\n", neighbours[src_index].prox_timestamp, src_id);
 
-        printf("Light: %d", received_packet_data.light_readings[0]);
+        printf("Light: %ld", received_packet_data.light_readings[0]);
         for (int i = 1; i < 10; i++) {
-          printf(", %d", received_packet_data.light_readings[i]);
+          printf(", %ld", received_packet_data.light_readings[i]);
         }
         printf("\n");
       }
@@ -162,7 +162,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
 
 // Scheduler function for the sender of neighbour discovery packets
 char sender_scheduler(struct rtimer *t, void *ptr) {
- 
+  
   static uint16_t i = 0;
   
   static int NumSleep=0;
@@ -274,7 +274,6 @@ static void print_light_reading(int value)
 
 void light_sensor_scan()
 {
-  static uint16_t i = 0;
 
   int value;
 
@@ -289,13 +288,13 @@ void light_sensor_scan()
   }
 
   // printf("Stored readings: ");
-  // for (i = 0; i < 10; i++) {
+  // for (int i = 0; i < 10; i++) {
   //   printf("%ld, ", light_readings[i]);
   // }
   // printf("\n");
 
   // printf("Sent readings: ");
-  // for (i = 0; i < 10; i++) {
+  // for (int i = 0; i < 10; i++) {
   //   printf("%ld, ", data_packet.light_readings[i]);
   // }
   //   printf("\n");
