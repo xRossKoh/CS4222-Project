@@ -40,7 +40,7 @@ sudo make TARGET=cc26x0-cc13x0 BOARD=sensortag/cc2650 PORT=/dev/ttyACM0 <FILENAM
 3. Use RealTerm to visualise outputs from the SensorTag via the serial port. 
 
 ## Running Task 1
-This task requires 2 SensorTags, one of which will be node A and the other Node B. Flash each SensorTag with the corresponding `task1_<node ID>.cc26x0-cc13x0` image.
+This task requires 2 SensorTags, one of which will be Node A and the other Node B. Flash each SensorTag with the corresponding `task1_<node ID>.cc26x0-cc13x0` image.
 
 ## Running Task 2
 This task requires 2-4 SensorTags. Let 1 of the SensorTags be the transmitter, and the other 1-3 SensorTags be the receivers. Flash the transmitter with the `task2_light_sensor.cc26x0-cc13x0` image, and flash the receivers with the `task2_receiver.cc26x0-cc13x0` iamge.

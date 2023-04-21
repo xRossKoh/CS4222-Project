@@ -96,6 +96,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
   // Get the current time stamp
   curr_timestamp = clock_time();
 
+
   while(1){
 
     // radio on
@@ -103,7 +104,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
 
     // send NUM_SEND number of neighbour discovery beacon packets
     for(i = 0; i < NUM_SEND; i++){
-
+     
        // Initialize the nullnet module with information of packet to be trasnmitted
       nullnet_buf = (uint8_t *)&data_packet; //data transmitted
       nullnet_len = sizeof(data_packet); //length of data transmitted
@@ -115,7 +116,7 @@ char sender_scheduler(struct rtimer *t, void *ptr) {
       data_packet.timestamp = curr_timestamp;
 
       NETSTACK_NETWORK.output(&dest_addr); //Packet transmission
-
+      
       // wait for WAKE_TIME before sending the next packet
       if(i != (NUM_SEND - 1)){
 

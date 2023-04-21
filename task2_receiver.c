@@ -94,6 +94,9 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     // Check for current state of program
     if (!is_detect_state) {
 
+
+      // printf("%ld PACKET %ld\n", clock_time(), received_packet_data.src_id);
+
       // 2s threshold between successive packets for intermittent disconnect
       if (clock_time() - last_received_timestamp >= 192) {
         prox_timestamp = clock_time();
