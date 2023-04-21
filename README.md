@@ -1,7 +1,8 @@
 # CS4222/CS5222 Wireless Networking
 ### Group 1
 
-This repository contains the code for the CS4222/CS5222 project for AY22/23. The project requirements can be found [here](https://weiserlab.github.io/ambuj/cs4222_project).
+This repository contains the code for the CS4222/CS5222 project for AY22/23 Semester 2. 
+The project requirements can be found [here](https://weiserlab.github.io/ambuj/cs4222_project).
 
 The code has been tested to compile on Ubuntu CLI 22.04 with Contiki OS and the ARM GCC compiler. Installation steps are provided below.
 The pre-compiled programs are also provided in the `Compiled programs` directory in each of the task directories. Steps 1 and 2 of the Setup are not required to use the pre-compiled programs.
