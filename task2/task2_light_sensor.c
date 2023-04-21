@@ -147,12 +147,6 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
       else if (clock_time() - neighbours[src_index].prox_timestamp >= 1920) {
         neighbours[src_index].is_detect_state = true;
         printf("%ld DETECT %ld\n", neighbours[src_index].prox_timestamp, src_id);
-
-        // printf("Light: %ld", received_packet_data.light_readings[0]);
-        // for (int i = 1; i < 10; i++) {
-        //   printf(", %ld", received_packet_data.light_readings[i]);
-        // }
-        // printf("\n");
       }
     }
     
