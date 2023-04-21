@@ -107,9 +107,9 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     //     sender_id = received_packet_data.src_id;
     //     printf("%ld DETECT %ld\n", prox_timestamp, sender_id);
 
-    //     printf("Light: %d", received_packet_data.light_readings[0]);
+    //     printf("Light: %ld", received_packet_data.light_readings[0]);
     //     for (int i = 1; i < 10; i++) {
-    //       printf(", %d", received_packet_data.light_readings[i]);
+    //       printf(", %ld", received_packet_data.light_readings[i]);
     //     }
     //     printf("\n");
     //   }
@@ -227,7 +227,6 @@ static void print_light_reading(int value)
 
 void light_sensor_scan()
 {
-  static uint16_t i = 0;
 
   int value;
 
@@ -265,7 +264,7 @@ PROCESS_THREAD(light_sensor_process, ev, data)
   init_light_sensor();
 
   while (1) {
-    etimer_set(&et, CLOCK_SECOND * 5);
+    etimer_set(&et, CLOCK_SECOND * 30);
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
     light_sensor_scan();
   }
