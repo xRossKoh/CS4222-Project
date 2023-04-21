@@ -311,7 +311,7 @@ PROCESS_THREAD(light_sensor_process, ev, data)
   init_light_sensor();
 
   while (1) {
-    etimer_set(&et, CLOCK_SECOND * 5);
+    etimer_set(&et, CLOCK_SECOND * 30);
     PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
     light_sensor_scan();
   }

@@ -95,7 +95,7 @@ void receive_packet_callback(const void *data, uint16_t len, const linkaddr_t *s
     if (!is_detect_state) {
 
       // 2s threshold between successive packets for intermittent disconnect
-      if (clock_time() - last_received_timestamp >= 256) {
+      if (clock_time() - last_received_timestamp >= 192) {
         prox_timestamp = clock_time();
       }
 
